@@ -103,47 +103,26 @@ DELETE FROM public.dw_study
 WHERE nci_id NOT IN
 (
 with reporting_start_date as (select to_date('06/15/2015', 'MM/dd/yyyy')),
-
                 reporting_end_date as (select current_date)
-
                 select distinct(nci_id) from
-
                 (select *, CASE WHEN internal_system_id in
-
                 (
-
                 with results as (
-
                 select row_number() over(partition by nci_id order by status_date desc, internal_system_id desc) as row_num,*
-
                 from dw_study_overall_status
-
                 ) select internal_system_id from results where row_num =1
-
                 )
-
                 THEN now()
-
                 ELSE lead(status_date) OVER(ORDER BY nci_id, status_date, internal_system_id)   END  as "lead_date"
-
                 from dw_study_overall_status    ) as dw
-
                 where ((status_date >= (select * from reporting_start_date)
-
                 and  status_date<= (select * from reporting_end_date))
-
                 or ( (select * from reporting_start_date) >= status_date
-
                 and (select * from reporting_start_date)<=lead_date
-
                 )) and status in ('IN_REVIEW', 'APPROVED','ACTIVE','ENROLLING_BY_INVITATION','TEMPORARILY_CLOSED_TO_ACCRUAL','TEMPORARILY_CLOSED_TO_ACCRUAL_AND_INTERVENTION')
-
                 and nci_id in (select nci_id from dw_study where processing_status <> 'Rejected')
-
                 order by nci_id
 );
-
-
 DELETE FROM public.dw_study_anatomic_site WHERE nci_id NOT IN (select nci_id from public.dw_study);
 DELETE FROM public.dw_study_arm_and_intervention WHERE nci_id NOT IN (select nci_id from public.dw_study);
 DELETE FROM public.dw_study_collaborator WHERE nci_id NOT IN (select nci_id from public.dw_study);
@@ -158,7 +137,6 @@ DELETE FROM public.dw_study_participating_site_investigators WHERE nci_id NOT IN
 DELETE FROM public.dw_study_secondary_purpose WHERE nci_id NOT IN (select nci_id from public.dw_study);
 DELETE FROM public.dw_study_biomarker WHERE nci_id NOT IN (select nci_id from public.dw_study);
 DELETE FROM public.dw_study_association WHERE study_a NOT IN (select nci_id from public.dw_study);
-
 CREATE INDEX nci_id_idx1 ON hist_dw_study(nci_id);
 CREATE INDEX nci_id_idx2 ON hist_dw_study_anatomic_site(nci_id);
 CREATE INDEX nci_id_idx3 ON hist_dw_study_arm_and_intervention(nci_id);
@@ -173,8 +151,6 @@ CREATE INDEX nci_id_idx12 ON hist_dw_study_overall_status(nci_id);
 CREATE INDEX nci_id_idx13 ON hist_dw_study_participating_site(nci_id);
 CREATE INDEX nci_id_idx14 ON hist_dw_study_participating_site_investigators(nci_id);
 CREATE INDEX nci_id_idx15 ON hist_dw_study_secondary_purpose(nci_id);
-
-
 CREATE INDEX run_id_idx1 ON hist_dw_study(run_id);
 CREATE INDEX run_id_idx2 ON hist_dw_study_anatomic_site(run_id);
 CREATE INDEX run_id_idx3 ON hist_dw_study_arm_and_intervention(run_id);
@@ -190,8 +166,6 @@ CREATE INDEX run_id_idx12 ON hist_dw_study_overall_status(run_id);
 CREATE INDEX run_id_idx13 ON hist_dw_study_participating_site(run_id);
 CREATE INDEX run_id_idx14 ON hist_dw_study_participating_site_investigators(run_id);
 CREATE INDEX run_id_idx15 ON hist_dw_study_secondary_purpose(run_id);
-
-
 EOF
 
 
@@ -200,12 +174,11 @@ echo 'Checking for pre-amendment copy of studies...'
 
 echo 'Finally, removing trials that do not have NCT ID, do not have appropriate processing_status and filtering out biomarkers.'
 /bin/psql  <<EOF
-
 DELETE FROM public.dw_study WHERE nct_id IS NULL;
 DELETE FROM public.dw_study WHERE nct_id NOT LIKE 'NCT%';
 DELETE FROM public.dw_study WHERE processing_status NOT IN ('Abstraction Verified No Response', 'Abstraction Verified Response','Verification Pending','Abstracted');
 DELETE FROM dw_study_biomarker where NOT (assay_purpose ilike '%Eligibility Criterion - Inclusion%' or assay_purpose ilike '%Eligibility Criterion - Exclusion%');
-
+DELETE from public.dw_study where expanded_access_indicator='YES';
 EOF
 
 # Generating DW2 JSON
