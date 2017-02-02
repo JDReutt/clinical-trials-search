@@ -185,6 +185,14 @@ EOF
 echo 'Generating DW2 JSON'
 /bin/psql  -f ./trial_query.sql -o ./trials.out
 
+if [ -s ./trials.out ]
+then
+	echo 'trials.out is not empty; can proceed'
+else
+	exit 1
+fi
+
+
 echo 'Uploading JSON to the S3 bucket'
 aws s3 ls s3://datawarehouse-production/ --human-readable
 aws s3 cp ./trials.out s3://datawarehouse-production/
